@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  llmApiKey  String?
+  llmModel   String?
+  llmBaseUrl String?
+  createdAt  DateTime @default(now())
+  quotes     Quote[]
+}
+
+model Quote {
+  id             String   @id @default(cuid())
+  numero         String   @unique
+  cliente        String
+  atencion       String
+  emitido        String
+  fechaCorta     String
+  anio           String
+  moneda         String   @default("PEN")
+  intro          String
+  items          String
+  detalle        String
+  tiempoProd     String?
+  condiciones    String
+   transferencia  String?
+   aplicaIgv     Boolean  @default(true)
+   userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

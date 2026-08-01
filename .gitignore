@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local database and dev logs
+/prisma/dev.db
+dev_out.txt
+dev_err.txt
+
 # vercel
 .vercel
 

@@ -152,6 +152,7 @@ export default function ChatPage() {
           tiempo_produccion: quoteState.tiempo_produccion,
           transferencia: quoteState.transferencia || undefined,
           aplica_igv: quoteState.aplica_igv ?? (quoteState.moneda === "PEN"),
+          contacto_dinamita: quoteState.contacto_dinamita || "efrain",
           condiciones_pago: quoteState.condiciones_pago.length > 0 ? quoteState.condiciones_pago : ["50% de adelanto para iniciar", "50% de saldo contra entrega"],
         }),
       })

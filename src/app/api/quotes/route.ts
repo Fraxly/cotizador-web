@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       detalle: JSON.stringify(body.detalle || []),
       tiempoProd: body.tiempo_produccion || null,
       condiciones: JSON.stringify(body.condiciones_pago || []),
+      contactoDinamita: body.contacto_dinamita || null,
       transferencia: body.transferencia || null,
       aplicaIgv: body.aplica_igv ?? true,
       userId: session.user.id,

@@ -26,4 +26,5 @@ export interface QuoteData {
   condiciones_pago: string[]
   transferencia?: "pen" | "usd_local" | "internacional"
   aplica_igv?: boolean
+  contacto_dinamita?: "efrain" | "nicolas"
 }

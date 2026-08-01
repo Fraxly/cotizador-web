@@ -32,6 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     condiciones_pago: JSON.parse(quote.condiciones || "[]"),
     transferencia: (quote.transferencia || undefined) as "pen" | "usd_local" | "internacional" | undefined,
     aplica_igv: quote.aplicaIgv,
+    contacto_dinamita: (quote.contactoDinamita || undefined) as "efrain" | "nicolas" | undefined,
   }
 
   try {

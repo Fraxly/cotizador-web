@@ -50,6 +50,7 @@ model Quote {
   detalle        String
   tiempoProd     String?
   condiciones    String
+  contactoDinamita String?
    transferencia  String?
    aplicaIgv     Boolean  @default(true)
    userId         String

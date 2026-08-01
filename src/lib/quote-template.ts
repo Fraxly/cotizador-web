@@ -18,6 +18,8 @@ const TEXTOS: Record<string, Record<string, string>> = {
     condiciones_pago_titulo: "CONDICIONES DE PAGO:",
     footer_titulo: "Propuesta comercial",
     contacto_titulo: "¿Dudas o consultas?",
+    vigencia_nota: "*Esta propuesta tiene una vigencia de 15 días calendario desde su fecha de emisión.",
+    modo_trabajo_titulo: "Cómo trabajamos",
   },
   en: {
     portada_linea1: "Commercial", portada_linea2: "Proposal",
@@ -36,13 +38,28 @@ const TEXTOS: Record<string, Record<string, string>> = {
     condiciones_pago_titulo: "PAYMENT TERMS:",
     footer_titulo: "Commercial Proposal",
     contacto_titulo: "Questions?",
+    vigencia_nota: "*This proposal is valid for 15 calendar days from its issue date.",
+    modo_trabajo_titulo: "How we work",
   },
 }
 
-const CONTACTOS_DINAMITA = [
-  { nombre: "Efraín Ramírez", email: "efrain.ramirez@dinamita.pe", telefono: "+51 970 088 493" },
-  { nombre: "Nicolás Reátegui", email: "nicolas.reategui@dinamita.pe", telefono: "+51 934 693 027" },
-]
+const MODO_TRABAJO: Record<string, string[]> = {
+  es: [
+    "Reunión virtual de kickoff para alinear objetivos y expectativas.",
+    "1 ronda de revisión incluida por entregable.",
+    "Entrega final y sesión de cierre para resolver dudas.",
+  ],
+  en: [
+    "Virtual kickoff call to align on goals and expectations.",
+    "1 revision round included per deliverable.",
+    "Final delivery and closing session to answer questions.",
+  ],
+}
+
+const CONTACTOS_DINAMITA = {
+  efrain: { nombre: "Efraín Ramírez", email: "efrain.ramirez@dinamita.pe", telefono: "+51 970 088 493" },
+  nicolas: { nombre: "Nicolás Reátegui", email: "nicolas.reategui@dinamita.pe", telefono: "+51 934 693 027" },
+}
 
 const SIMBOLOS: Record<string, string> = { PEN: "S/", USD: "US$" }
 
@@ -100,6 +117,7 @@ export function renderQuoteHtml(data: QuoteData): string {
   const detallePaginas = paginarDetalle(data.detalle || [])
 
   const banco = elegirBanco(data)
+  const contacto = CONTACTOS_DINAMITA[data.contacto_dinamita || "efrain"]
 
   const muescas = data.condiciones_pago.map((_, i) =>
     `<span class="muesca" style="left:${(100 / (data.condiciones_pago.length + 1) * (i + 1)).toFixed(2)}%"></span>`
@@ -240,6 +258,7 @@ table.tabla-cotizacion tr:last-child td { border-bottom: none; }
     <div class="fila total"><span>${t.total}</span><span class="valor">${simbolo} ${fmt(total)}</span></div>
   </div>
   <p class="nota-moneda">${t.nota_moneda} ${moneda === "PEN" ? t.moneda_pen : t.moneda_usd}</p>
+  <p class="nota-moneda">${t.vigencia_nota}</p>
 
   <div class="footer-block">
     <div class="footer-rule"></div>
@@ -277,6 +296,11 @@ ${detallePaginas.map(pagina => `
     <ul><li>${data.tiempo_produccion}</li></ul>
   </div>` : ""}
 
+  <div class="caja">
+    <h3>${t.modo_trabajo_titulo}</h3>
+    <ul>${(MODO_TRABAJO[data.idioma || "es"] || MODO_TRABAJO.es).map(b => `<li>${b}</li>`).join("")}</ul>
+  </div>
+
   <div class="caja caja-bancaria">
     <div class="datos">
       <h3>${t.datos_bancarios_titulo}</h3>
@@ -299,11 +323,10 @@ ${detallePaginas.map(pagina => `
   <div class="caja">
     <h3>${t.contacto_titulo}</h3>
     <div class="caja-contacto">
-      ${CONTACTOS_DINAMITA.map(c => `
       <div class="persona">
-        <b>${c.nombre}</b>
-        ${c.email}<br>${c.telefono}
-      </div>`).join("")}
+        <b>${contacto.nombre}</b>
+        ${contacto.email}<br>${contacto.telefono}
+      </div>
     </div>
   </div>
 

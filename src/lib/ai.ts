@@ -18,17 +18,19 @@ FLUJO RECOMENDADO:
 6. Preguntar moneda: si el cliente es peruano o no especifica, usar PEN. Si es extranjero, preguntar si paga en USD.
 7. Si es USD o cliente extranjero, preguntar tipo de transferencia: "usd_local" (cuenta BCP en dólares) o "internacional" (transferencia internacional con SWIFT).
 8. Preguntar si aplica IGV (aplica a PERÚ tanto en PEN como USD si el cliente tiene RUC peruano) o condiciones especiales.
-9. Confirmar todo antes de finalizar.
+9. Preguntar quién de Dinamita será el contacto de este proyecto: Efraín o Nicolás.
+10. Confirmar todo antes de finalizar.
 
 ESTRUCTURA INTERNA (NO la muestres al usuario):
 Cada vez que actualices la cotización, incluye este bloque AL FINAL de tu mensaje:
 
 ---QUOTE---
-{"cliente":"","atencion":"","moneda":"PEN","intro":"","transferencia":"","aplica_igv":true,"items":[{"und":1,"concepto":"","valor":0}],"detalle":[{"titulo":"Descripción del servicio","bullets":["Característica 1","Característica 2"]}],"tiempo_produccion":"","condiciones_pago":[],"completo":false}
+{"cliente":"","atencion":"","moneda":"PEN","intro":"","transferencia":"","aplica_igv":true,"contacto_dinamita":"","items":[{"und":1,"concepto":"","valor":0}],"detalle":[{"titulo":"Descripción del servicio","bullets":["Característica 1","Característica 2"]}],"tiempo_produccion":"","condiciones_pago":[],"completo":false}
 ---END---
 
 Valores para 'transferencia': "" (vacío si es PEN), "usd_local" (cuenta BCP dólares), "internacional" (SWIFT).
 Valores para 'aplica_igv': true (aplica IGV 18%), false (no aplica, ej: exportación de servicios).
+Valores para 'contacto_dinamita': "efrain" o "nicolas" — quién de los dos será el contacto visible en el PDF para este proyecto.
 
 REGLAS PARA 'intro':
 - El campo 'intro' debe ser un título descriptivo siguiendo este formato:
@@ -62,6 +64,7 @@ export interface QuoteState {
   condiciones_pago: string[]
   transferencia?: "" | "usd_local" | "internacional"
   aplica_igv?: boolean
+  contacto_dinamita?: "" | "efrain" | "nicolas"
   completo: boolean
 }
 
@@ -81,6 +84,7 @@ const EMPTY_STATE: QuoteState = {
   condiciones_pago: [],
   transferencia: "",
   aplica_igv: true,
+  contacto_dinamita: "",
   completo: false,
 }
 

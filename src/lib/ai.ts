@@ -97,32 +97,97 @@ export function parseQuoteState(content: string): { text: string; state: QuoteSt
   }
 }
 
-async function buildSystemPrompt(userId: string): Promise<string> {
-  const recentQuotes = await prisma.quote.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    select: {
-      cliente: true,
-      intro: true,
-      items: true,
-      moneda: true,
-      createdAt: true,
-    },
+const STOPWORDS = new Set([
+  "para", "como", "pero", "esto", "esta", "este", "unos", "unas", "sobre",
+  "hola", "buenas", "quiero", "necesito", "quisiera", "gracias", "porque",
+  "tambien", "cuando", "donde", "seria", "podria", "hacer", "tiene", "tener",
+])
+
+function extractKeywords(messages: { role: string; content: string }[]): string[] {
+  const text = messages
+    .filter(m => m.role === "user")
+    .map(m => m.content)
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+
+  const words = text.match(/[a-z0-9]{4,}/g) || []
+  return [...new Set(words.filter(w => !STOPWORDS.has(w)))]
+}
+
+async function buildPriceHistoryContext(messages: { role: string; content: string }[]): Promise<string> {
+  const rows = await prisma.priceReference.findMany()
+  if (rows.length === 0) return ""
+
+  const byCategory = new Map<string, { moneda: string; count: number; min: number; max: number; sum: number }>()
+  for (const r of rows) {
+    const key = `${r.categoria}|${r.moneda}`
+    const entry = byCategory.get(key) || { moneda: r.moneda, count: 0, min: Infinity, max: -Infinity, sum: 0 }
+    entry.count++
+    entry.min = Math.min(entry.min, r.valorUnitario)
+    entry.max = Math.max(entry.max, r.valorUnitario)
+    entry.sum += r.valorUnitario
+    byCategory.set(key, entry)
+  }
+  const summaryLines = [...byCategory.entries()].map(([key, e]) => {
+    const [categoria] = key.split("|")
+    const avg = (e.sum / e.count).toFixed(0)
+    return `- ${categoria} (${e.moneda}): ${e.count} líneas cotizadas antes, precio unitario típico ${e.moneda} ${e.min}-${e.max} (promedio ~${e.moneda} ${avg})`
   })
 
-  if (recentQuotes.length === 0) return SYSTEM_PROMPT
+  const keywords = extractKeywords(messages)
+  const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
 
-  const contextLines = recentQuotes.map((q, i) => {
-    const items = JSON.parse(q.items) as { und: number; concepto: string; valor: number }[]
-    const itemsStr = items.map(it => `  - ${it.concepto}: S/ ${it.valor} (x${it.und})`).join("\n")
-    return `[${i + 1}] ${q.intro || q.cliente} (${q.moneda})\n${itemsStr}`
-  })
+  const scored = rows
+    .map(r => {
+      const haystack = normalize(`${r.categoria} ${r.concepto} ${r.descripcion ?? ""}`)
+      const score = keywords.reduce((acc, kw) => acc + (haystack.includes(kw) ? 1 : 0), 0)
+      return { r, score }
+    })
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 15)
 
-  return `${SYSTEM_PROMPT}
+  const matchLines = scored.map(({ r }) =>
+    `- [${r.cliente}] ${r.concepto}: ${r.moneda} ${r.valorUnitario} x${r.und} (${r.tiempoProduccion ?? "sin tiempo indicado"}) — ${r.descripcion ?? ""}`
+  )
 
-COTIZACIONES ANTERIORES (úsa estos precios como referencia):
-${contextLines.join("\n\n")}`
+  return `
+
+BASE DE PRECIOS HISTÓRICOS DE DINAMITA (usa estos números reales como referencia, no inventes precios):
+${summaryLines.join("\n")}
+${matchLines.length > 0 ? `\nLÍNEAS PARECIDAS A LO QUE SE ESTÁ COTIZANDO AHORA:\n${matchLines.join("\n")}` : ""}`
+}
+
+async function buildSystemPrompt(userId: string, messages: { role: string; content: string }[]): Promise<string> {
+  const [recentQuotes, priceHistory] = await Promise.all([
+    prisma.quote.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        cliente: true,
+        intro: true,
+        items: true,
+        moneda: true,
+        createdAt: true,
+      },
+    }),
+    buildPriceHistoryContext(messages),
+  ])
+
+  let prompt = SYSTEM_PROMPT + priceHistory
+
+  if (recentQuotes.length > 0) {
+    const contextLines = recentQuotes.map((q, i) => {
+      const items = JSON.parse(q.items) as { und: number; concepto: string; valor: number }[]
+      const itemsStr = items.map(it => `  - ${it.concepto}: S/ ${it.valor} (x${it.und})`).join("\n")
+      return `[${i + 1}] ${q.intro || q.cliente} (${q.moneda})\n${itemsStr}`
+    })
+    prompt += `\n\nCOTIZACIONES ANTERIORES (úsa estos precios como referencia):\n${contextLines.join("\n\n")}`
+  }
+
+  return prompt
 }
 
 async function getClient(userId: string): Promise<OpenAI> {
@@ -150,7 +215,7 @@ export async function chat(
   userId: string
 ): Promise<ChatResponse> {
   const [systemContent, client, model] = await Promise.all([
-    buildSystemPrompt(userId),
+    buildSystemPrompt(userId, messages),
     getClient(userId),
     getModel(userId),
   ])

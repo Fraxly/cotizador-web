@@ -19,6 +19,23 @@ model User {
   quotes     Quote[]
 }
 
+model PriceReference {
+  id               Int      @id @default(autoincrement())
+  numeroPropuesta  String
+  fecha            String
+  cliente          String
+  categoria        String
+  concepto         String
+  und              Float
+  valorUnitario    Float
+  moneda           String
+  tiempoProduccion String?
+  condicionesPago  String?
+  descripcion      String?
+
+  @@index([categoria])
+}
+
 model Quote {
   id             String   @id @default(cuid())
   numero         String   @unique

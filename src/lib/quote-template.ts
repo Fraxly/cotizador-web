@@ -17,6 +17,7 @@ const TEXTOS: Record<string, Record<string, string>> = {
     swift_label: "SWIFT:",
     condiciones_pago_titulo: "CONDICIONES DE PAGO:",
     footer_titulo: "Propuesta comercial",
+    contacto_titulo: "¿Dudas o consultas?",
   },
   en: {
     portada_linea1: "Commercial", portada_linea2: "Proposal",
@@ -34,8 +35,14 @@ const TEXTOS: Record<string, Record<string, string>> = {
     swift_label: "SWIFT:",
     condiciones_pago_titulo: "PAYMENT TERMS:",
     footer_titulo: "Commercial Proposal",
+    contacto_titulo: "Questions?",
   },
 }
+
+const CONTACTOS_DINAMITA = [
+  { nombre: "Efraín Ramírez", email: "efrain.ramirez@dinamita.pe", telefono: "+51 970 088 493" },
+  { nombre: "Nicolás Reátegui", email: "nicolas.reategui@dinamita.pe", telefono: "+51 934 693 027" },
+]
 
 const SIMBOLOS: Record<string, string> = { PEN: "S/", USD: "US$" }
 
@@ -174,6 +181,9 @@ table.tabla-cotizacion tr:last-child td { border-bottom: none; }
 .caja-bancaria .condiciones { flex: 0 0 78mm; font-size: 8.5pt; text-align: right; }
 .caja-bancaria .condiciones h4 { font-family: "Neue Montreal", sans-serif; font-size: 9.5pt; margin: 0 0 2mm; }
 .caja-bancaria .condiciones p { margin: 0.6mm 0; }
+.caja-contacto { display: flex; gap: 12mm; }
+.caja-contacto .persona { flex: 1; font-size: 9pt; line-height: 1.7; }
+.caja-contacto .persona b { font-family: "Neue Montreal", sans-serif; display: block; font-size: 9.5pt; margin-bottom: 0.5mm; }
 </style>
 </head>
 <body>
@@ -283,6 +293,17 @@ ${detallePaginas.map(pagina => `
     <div class="condiciones">
       <h4>${t.condiciones_pago_titulo}</h4>
       ${data.condiciones_pago.map(c => `<p>${c}</p>`).join("")}
+    </div>
+  </div>
+
+  <div class="caja">
+    <h3>${t.contacto_titulo}</h3>
+    <div class="caja-contacto">
+      ${CONTACTOS_DINAMITA.map(c => `
+      <div class="persona">
+        <b>${c.nombre}</b>
+        ${c.email}<br>${c.telefono}
+      </div>`).join("")}
     </div>
   </div>
 

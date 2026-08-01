@@ -37,6 +37,7 @@ yarn-error.log*
 /prisma/dev.db
 dev_out.txt
 dev_err.txt
+dev.pid
 
 # vercel
 .vercel

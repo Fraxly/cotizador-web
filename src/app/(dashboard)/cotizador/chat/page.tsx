@@ -7,6 +7,7 @@ import type { QuoteState } from "@/lib/ai"
 interface Message {
   role: "user" | "assistant"
   content: string
+  displayContent?: string
 }
 
 function formatPrice(val: number, moneda: string) {
@@ -91,12 +92,10 @@ export default function ChatPage() {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || loading) return
+  const sendContent = useCallback(async (content: string, displayContent?: string) => {
+    if (!content.trim() || loading) return
 
-    const userText = input.trim()
-    setInput("")
-    setMessages(prev => [...prev, { role: "user", content: userText }])
+    setMessages(prev => [...prev, { role: "user", content, displayContent }])
     setLoading(true)
 
     try {
@@ -106,7 +105,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: [
             ...messages,
-            { role: "user", content: userText },
+            { role: "user", content },
           ].map(m => ({ role: m.role, content: m.content })),
         }),
       })
@@ -128,7 +127,43 @@ export default function ChatPage() {
     } finally {
       setLoading(false)
     }
-  }, [input, loading, messages])
+  }, [loading, messages])
+
+  const sendMessage = useCallback(() => {
+    if (!input.trim()) return
+    const userText = input.trim()
+    setInput("")
+    sendContent(userText)
+  }, [input, sendContent])
+
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file || loading || uploading) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/chat/extract", { method: "POST", body: formData })
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || "Error al leer el archivo")
+
+      await sendContent(
+        `He adjuntado el documento "${data.filename}". Este es su contenido:\n\n"""\n${data.text}\n"""`,
+        `📎 ${data.filename}`
+      )
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al leer el archivo"
+      setMessages(prev => [...prev, { role: "assistant", content: `❌ **Error:** ${msg}` }])
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function handleGeneratePdf() {
     if (!quoteState || quoteState.items.length === 0) return
@@ -201,7 +236,7 @@ export default function ChatPage() {
                       ? "bg-[#9568ef] text-white rounded-br-md"
                       : "bg-[#f5f5f7] text-[#1d1d1f] rounded-bl-md"
                   }`}
-                  dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+                  dangerouslySetInnerHTML={{ __html: formatMessage(msg.displayContent ?? msg.content) }}
                 />
               </div>
             ))}
@@ -227,6 +262,27 @@ export default function ChatPage() {
 
         <div className="border-t border-[#e8e8ed] bg-white px-4 py-3">
           <div className="max-w-2xl mx-auto flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt"
+              className="hidden"
+              onChange={handleFileSelected}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || uploading}
+              title="Adjuntar PDF, Word o TXT"
+              className="w-10 h-10 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
+            >
+              {uploading ? (
+                <span className="w-3.5 h-3.5 border-2 border-[#9568ef] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a1.5 1.5 0 01-2.12-2.12l8.49-8.48" />
+                </svg>
+              )}
+            </button>
             <input
               value={input}
               onChange={e => setInput(e.target.value)}

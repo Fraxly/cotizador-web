@@ -30,7 +30,8 @@ export async function extractText(buffer: Buffer, filename: string): Promise<str
 
   text = text.trim()
   if (text.length > MAX_EXTRACT_CHARS) {
-    text = text.slice(0, MAX_EXTRACT_CHARS) + "\n\n[...documento truncado por longitud, esto es solo una parte...]"
+    text = text.slice(0, MAX_EXTRACT_CHARS) +
+      "\n\n[[AVISO_TRUNCAMIENTO: este documento supera el límite y fue cortado aquí — todo lo que viene después de este punto en el archivo original NO fue leído. Antes de responder cualquier otra cosa, avisa esto explícitamente al usuario.]]"
   }
 
   return text

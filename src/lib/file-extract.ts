@@ -1,6 +1,6 @@
 import path from "path"
 
-export const MAX_EXTRACT_CHARS = 12000
+export const MAX_EXTRACT_CHARS = 60000
 
 const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".txt"]
 

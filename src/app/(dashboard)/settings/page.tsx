@@ -4,9 +4,11 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import Link from "next/link"
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
+
+  const { saved } = await searchParams
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -28,12 +30,19 @@ export default async function SettingsPage() {
     })
 
     revalidatePath("/settings")
+    redirect("/settings?saved=1")
   }
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
       <h1 className="text-2xl font-bold text-[#1d1d1f] mb-1">Configuración</h1>
-      <p className="text-[#86868b] text-sm mb-10">Configura el modelo de IA que usa el cotizador</p>
+      <p className="text-[#86868b] text-sm mb-6">Configura el modelo de IA que usa el cotizador</p>
+
+      {saved && (
+        <div className="mb-6 bg-[#e6f9ec] border border-[#8fe6ab] rounded-xl px-4 py-3 text-sm text-[#1d1d1f]">
+          ✅ Configuración guardada.
+        </div>
+      )}
 
       <form action={saveSettings} className="bg-white border border-[#e8e8ed] rounded-2xl p-6 space-y-6">
         <div>

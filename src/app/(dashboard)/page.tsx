@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import DeleteQuoteButton from "@/components/DeleteQuoteButton"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
                 <div className="flex items-center gap-3 text-sm text-[#86868b]">
                   <span>{q.moneda}</span>
                   <span>{new Date(q.createdAt).toLocaleDateString("es-PE")}</span>
+                  <DeleteQuoteButton id={q.id} cliente={q.cliente} />
                 </div>
               </div>
             </Link>

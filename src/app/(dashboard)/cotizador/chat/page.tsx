@@ -129,12 +129,25 @@ export default function ChatPage() {
     }
   }, [loading, messages])
 
+  const [attachedFile, setAttachedFile] = useState<{ filename: string; text: string } | null>(null)
+
   const sendMessage = useCallback(() => {
-    if (!input.trim()) return
-    const userText = input.trim()
+    const comment = input.trim()
+    if (!comment && !attachedFile) return
+
     setInput("")
-    sendContent(userText)
-  }, [input, sendContent])
+    const file = attachedFile
+    setAttachedFile(null)
+
+    if (file) {
+      const content = `He adjuntado el documento "${file.filename}". Este es su contenido:\n\n"""\n${file.text}\n"""` +
+        (comment ? `\n\nComentario: ${comment}` : "")
+      const displayContent = `📎 ${file.filename}` + (comment ? `\n${comment}` : "")
+      sendContent(content, displayContent)
+    } else {
+      sendContent(comment)
+    }
+  }, [input, attachedFile, sendContent])
 
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -153,10 +166,7 @@ export default function ChatPage() {
 
       if (!res.ok) throw new Error(data.error || "Error al leer el archivo")
 
-      await sendContent(
-        `He adjuntado el documento "${data.filename}". Este es su contenido:\n\n"""\n${data.text}\n"""`,
-        `📎 ${data.filename}`
-      )
+      setAttachedFile({ filename: data.filename, text: data.text })
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al leer el archivo"
       setMessages(prev => [...prev, { role: "assistant", content: `❌ **Error:** ${msg}` }])
@@ -261,6 +271,20 @@ export default function ChatPage() {
         </div>
 
         <div className="border-t border-[#e8e8ed] bg-white px-4 py-3">
+          {attachedFile && (
+            <div className="max-w-2xl mx-auto mb-2">
+              <div className="inline-flex items-center gap-2 bg-[#f5f5f7] rounded-full pl-3 pr-2 py-1.5 text-xs text-[#1d1d1f]">
+                <span>📎 {attachedFile.filename}</span>
+                <button
+                  onClick={() => setAttachedFile(null)}
+                  className="w-4 h-4 rounded-full bg-[#d2d2d7] hover:bg-[#b8b8bd] flex items-center justify-center text-[10px] leading-none"
+                  title="Quitar archivo"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
           <div className="max-w-2xl mx-auto flex gap-2">
             <input
               ref={fileInputRef}
@@ -287,13 +311,13 @@ export default function ChatPage() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendMessage())}
-              placeholder="Escribe tu respuesta..."
+              placeholder={attachedFile ? "Agrega un comentario (opcional)..." : "Escribe tu respuesta..."}
               disabled={loading}
               className="flex-1 px-4 py-2.5 bg-[#f5f5f7] rounded-full text-[15px] text-[#1d1d1f] placeholder-[#86868b] outline-none focus:ring-2 focus:ring-[#9568ef]/30 transition-shadow"
             />
             <button
               onClick={sendMessage}
-              disabled={loading || !input.trim()}
+              disabled={loading || (!input.trim() && !attachedFile)}
               className="w-10 h-10 rounded-full bg-[#9568ef] hover:bg-[#7c4fdb] disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

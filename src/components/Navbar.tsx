@@ -15,6 +15,9 @@ export async function Navbar() {
 
         {session?.user && (
           <div className="flex items-center gap-4">
+            <Link href="/calificaciones" className="text-[#9568ef] hover:text-[#7c4fdb] text-sm transition-colors">
+              Calificaciones
+            </Link>
             <Link href="/settings" className="text-[#9568ef] hover:text-[#7c4fdb] text-sm transition-colors">
               Configuración
             </Link>

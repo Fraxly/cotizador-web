@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
-export default function DeleteQuoteButton({ id, cliente }: { id: string; cliente: string }) {
+export default function DeleteButton({ endpoint, confirmLabel }: { endpoint: string; confirmLabel: string }) {
   const router = useRouter()
   const [deleting, setDeleting] = useState(false)
 
@@ -11,15 +11,15 @@ export default function DeleteQuoteButton({ id, cliente }: { id: string; cliente
     e.preventDefault()
     e.stopPropagation()
 
-    if (!confirm(`¿Eliminar la cotización de "${cliente}"? Esta acción no se puede deshacer.`)) return
+    if (!confirm(confirmLabel)) return
 
     setDeleting(true)
     try {
-      const res = await fetch(`/api/quotes/${id}`, { method: "DELETE" })
+      const res = await fetch(endpoint, { method: "DELETE" })
       if (!res.ok) throw new Error()
       router.refresh()
     } catch {
-      alert("No se pudo eliminar la cotización. Intenta de nuevo.")
+      alert("No se pudo eliminar. Intenta de nuevo.")
       setDeleting(false)
     }
   }
@@ -28,7 +28,7 @@ export default function DeleteQuoteButton({ id, cliente }: { id: string; cliente
     <button
       onClick={handleDelete}
       disabled={deleting}
-      title="Eliminar cotización"
+      title="Eliminar"
       className="w-8 h-8 rounded-full hover:bg-[#fde8e8] disabled:opacity-40 flex items-center justify-center text-[#86868b] hover:text-[#e5484d] transition-colors shrink-0"
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

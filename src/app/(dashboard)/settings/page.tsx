@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import Link from "next/link"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -94,6 +95,14 @@ export default async function SettingsPage() {
           Los cambios aplican inmediatamente en el chat.
         </p>
       </div>
+
+      <Link
+        href="/settings/casos"
+        className="mt-4 block bg-white border border-[#e8e8ed] hover:border-[#d2d2d7] rounded-2xl p-4 transition-colors"
+      >
+        <p className="text-sm text-[#1d1d1f] font-medium">Casos de referencia →</p>
+        <p className="text-xs text-[#86868b] mt-0.5">Perfil de empresa y proyectos comparables para el documento de Calificaciones.</p>
+      </Link>
     </div>
   )
 }

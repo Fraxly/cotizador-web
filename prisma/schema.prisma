@@ -17,6 +17,7 @@ model User {
   llmBaseUrl String?
   createdAt  DateTime @default(now())
   quotes     Quote[]
+  qualificationsDocs QualificationsDoc[]
 }
 
 model PriceReference {
@@ -34,6 +35,40 @@ model PriceReference {
   descripcion      String?
 
   @@index([categoria])
+}
+
+model CaseStudy {
+  id               String   @id @default(cuid())
+  cliente          String
+  servicioTitulo   String
+  descripcion      String
+  porQueComparable String?
+  url              String?
+  contactoNombre   String?
+  contactoEmail    String?
+  contactoTelefono String?
+  categoria        String?
+  createdAt        DateTime @default(now())
+}
+
+model CompanyProfile {
+  id        String   @id @default("default")
+  aboutText String
+  updatedAt DateTime @updatedAt
+}
+
+model QualificationsDoc {
+  id           String   @id @default(cuid())
+  numero       String   @unique
+  cliente      String
+  subtitulo    String
+  idioma       String   @default("es")
+  aboutText    String
+  casos        String
+  terminos     String
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
 }
 
 model Quote {

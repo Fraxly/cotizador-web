@@ -3,50 +3,19 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import DeleteButton from "@/components/DeleteButton"
-import { labelConversation } from "@/lib/conversation-label"
 
 export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  const [quotes, conversations] = await Promise.all([
-    prisma.quote.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, numero: true, cliente: true, moneda: true, createdAt: true },
-    }),
-    prisma.conversation.findMany({
-      where: { userId: session.user.id, tipo: "quote" },
-      orderBy: { updatedAt: "desc" },
-    }),
-  ])
+  const quotes = await prisma.quote.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, numero: true, cliente: true, moneda: true, createdAt: true },
+  })
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
-      {conversations.length > 0 && (
-        <div className="mb-10">
-          <h2 className="text-sm font-medium text-[#86868b] mb-3">Conversaciones ({conversations.length})</h2>
-          <div className="space-y-2">
-            {conversations.map(c => (
-              <Link
-                key={c.id}
-                href={`/cotizador/chat?c=${c.id}`}
-                className="flex items-center justify-between p-3 bg-[#f5f5f7] hover:bg-[#eeeef0] rounded-xl transition-colors"
-              >
-                <span className="text-sm text-[#1d1d1f] truncate mr-3">{labelConversation(c.messages, c.state)}</span>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-[#86868b]">{new Date(c.updatedAt).toLocaleDateString("es-PE")}</span>
-                  <DeleteButton
-                    endpoint={`/api/conversations/${c.id}`}
-                    confirmLabel="¿Eliminar esta conversación? Esta acción no se puede deshacer."
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold text-[#1d1d1f]">Cotizaciones</h1>

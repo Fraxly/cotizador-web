@@ -1,13 +1,18 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useRef, useEffect, useCallback, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import type { QuoteState } from "@/lib/ai"
 
 interface Message {
   role: "user" | "assistant"
   content: string
   displayContent?: string
+}
+
+const GREETING: Message = {
+  role: "assistant",
+  content: "¡Hola! Soy tu asistente para crear cotizaciones de **Dinamita**. Voy a guiarte paso a paso.\n\nPara empezar, ¿cuál es el **nombre del cliente**?",
 }
 
 function formatPrice(val: number, moneda: string) {
@@ -75,27 +80,60 @@ function QuoteSummary({ state }: { state: QuoteState }) {
 }
 
 export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
+  )
+}
+
+function ChatPageInner() {
   const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "¡Hola! Soy tu asistente para crear cotizaciones de **Dinamita**. Voy a guiarte paso a paso.\n\nPara empezar, ¿cuál es el **nombre del cliente**?",
-    },
-  ])
+  const searchParams = useSearchParams()
+  const [messages, setMessages] = useState<Message[]>([GREETING])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [quoteState, setQuoteState] = useState<QuoteState | null>(null)
   const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  useEffect(() => {
+    const cId = searchParams.get("c")
+    if (cId) {
+      fetch(`/api/conversations/${cId}`)
+        .then(r => (r.ok ? r.json() : null))
+        .then(data => {
+          if (data) {
+            setMessages(data.messages)
+            if (data.state) setQuoteState(data.state)
+            setConversationId(data.id)
+          }
+        })
+    } else {
+      fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "quote", messages: [GREETING], state: null }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          setConversationId(data.id)
+          router.replace(`/cotizador/chat?c=${data.id}`)
+        })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const sendContent = useCallback(async (content: string, displayContent?: string) => {
     if (!content.trim() || loading) return
 
-    setMessages(prev => [...prev, { role: "user", content, displayContent }])
+    const afterUser = [...messages, { role: "user" as const, content, displayContent }]
+    setMessages(afterUser)
     setLoading(true)
 
     try {
@@ -103,10 +141,7 @@ export default function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [
-            ...messages,
-            { role: "user", content },
-          ].map(m => ({ role: m.role, content: m.content })),
+          messages: afterUser.map(m => ({ role: m.role, content: m.content })),
         }),
       })
 
@@ -116,18 +151,34 @@ export default function ChatPage() {
       }
 
       const data = await res.json()
-      setMessages(prev => [...prev, { role: "assistant", content: data.text || "" }])
+      const afterAssistant = [...afterUser, { role: "assistant" as const, content: data.text || "" }]
+      setMessages(afterAssistant)
 
-      if (data.state) {
-        setQuoteState(data.state)
+      const newState = data.state || quoteState
+      if (data.state) setQuoteState(data.state)
+
+      if (conversationId) {
+        fetch(`/api/conversations/${conversationId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: afterAssistant, state: newState }),
+        }).catch(() => {})
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error de conexión"
-      setMessages(prev => [...prev, { role: "assistant", content: `❌ **Error:** ${msg}` }])
+      const afterError = [...afterUser, { role: "assistant" as const, content: `❌ **Error:** ${msg}` }]
+      setMessages(afterError)
+      if (conversationId) {
+        fetch(`/api/conversations/${conversationId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: afterError, state: quoteState }),
+        }).catch(() => {})
+      }
     } finally {
       setLoading(false)
     }
-  }, [loading, messages])
+  }, [loading, messages, conversationId, quoteState])
 
   const [attachedFile, setAttachedFile] = useState<{ filename: string; text: string } | null>(null)
 
@@ -348,13 +399,25 @@ export default function ChatPage() {
             </div>
           )}
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <button
               onClick={() => router.push("/")}
-              className="text-[#86868b] hover:text-[#1d1d1f] text-xs transition-colors"
+              className="block w-full text-[#86868b] hover:text-[#1d1d1f] text-xs transition-colors"
             >
               ← Volver al inicio
             </button>
+            {conversationId && (
+              <button
+                onClick={async () => {
+                  if (!confirm("¿Eliminar esta conversación? Esta acción no se puede deshacer.")) return
+                  await fetch(`/api/conversations/${conversationId}`, { method: "DELETE" })
+                  router.push("/")
+                }}
+                className="block w-full text-[#86868b] hover:text-[#e5484d] text-xs transition-colors"
+              >
+                Eliminar conversación
+              </button>
+            )}
           </div>
         </div>
       </div>

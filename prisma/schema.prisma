@@ -18,6 +18,20 @@ model User {
   createdAt  DateTime @default(now())
   quotes     Quote[]
   qualificationsDocs QualificationsDoc[]
+  conversations Conversation[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  tipo      String
+  messages  String
+  state     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, tipo])
 }
 
 model PriceReference {
